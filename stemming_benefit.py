@@ -12,7 +12,7 @@ import bnc_calculator
 
 def create_frequency_plots():
     bnc_words = stm.load_bnc()
-    original_kaggle_words = ['hello']  # stm.load_kaggle()
+    original_kaggle_words = stm.load_kaggle()
     stemmed_kaggle_words = stm.stem_list(original_kaggle_words, bnc_words)
 
     # Plot two lines of points
