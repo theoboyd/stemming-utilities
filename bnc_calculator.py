@@ -7,15 +7,26 @@ from __future__ import division
 from os import walk
 import sys
 #import profile
-import stemmer  # My stemmer functions
+import stemmer as stm # My stemmer functions
 
 # Printing labels with:
 ts = u'{:35s}{:10,d}'   # Thousands separated numbers
 fp = u'{:35s}{:10.3f}'  # Floating point numbers
 ls = u'{:35s}{:s}'      # Lists
 
-esp_path = '../KaggleData/ESPGame100k/'
-wordlists_path = '../IntermediateWordLists/'
+
+def load_bnc():
+    bnc_words = []
+
+    # Only one file for all BNC words
+    bnc_file = open(stm.wordlists_path + 'wordsBNC.txt')
+    bnc_line = bnc_file.readline()
+    while(bnc_line != ''):
+        bnc_words.append(stm.clean_text(bnc_line))
+        bnc_line = bnc_file.readline()
+    bnc_file.close()
+
+    return bnc_words
 
 
 def load_files():
@@ -23,37 +34,30 @@ def load_files():
     stemmed_file_names = []
     original_words = []
     stemmed_words = []
-    bnc_words = []
+    bnc_words = stm.load_bnc()
 
-    for (_, _, original_file_name) in walk(esp_path + 'labels/'):
+    for (_, _, original_file_name) in walk(stm.esp_path + stm.original_dir):
         original_file_names.extend(original_file_name)
 
     for original_file_name in original_file_names:
-        original_file = open(esp_path + 'labels/' + original_file_name)
+        original_file = open(stm.esp_path + stm.original_dir +
+                             original_file_name)
         of_line = original_file.readline()  # Python doesn't have do-whiles
         while(of_line != ''):
-            original_words.append(stemmer.clean_text(of_line))
+            original_words.append(stm.clean_text(of_line))
             of_line = original_file.readline()
         original_file.close()
 
-    for (_, _, stemmed_file_name) in walk(esp_path + 'labels-stemmed/'):
+    for (_, _, stemmed_file_name) in walk(stm.esp_path + stm.stemmed_dir):
         stemmed_file_names.extend(stemmed_file_name)
 
     for stemmed_file_name in stemmed_file_names:
-        stemmed_file = open(esp_path + 'labels-stemmed/' + stemmed_file_name)
+        stemmed_file = open(stm.esp_path + stm.stemmed_dir + stemmed_file_name)
         sf_line = stemmed_file.readline()
         while(sf_line != ''):
-            stemmed_words.append(stemmer.clean_text(sf_line))
+            stemmed_words.append(stm.clean_text(sf_line))
             sf_line = stemmed_file.readline()
         stemmed_file.close()
-
-    # Only one file for all BNC words
-    bnc_file = open(wordlists_path + 'wordsBNC.txt')
-    bnc_line = bnc_file.readline()
-    while(bnc_line != ''):
-        bnc_words.append(stemmer.clean_text(bnc_line))
-        bnc_line = bnc_file.readline()
-    bnc_file.close()
 
     print('Traversed directories and loaded words.')
     return (original_words, stemmed_words, bnc_words)
@@ -95,7 +99,8 @@ def main():
 
     # Percentage of all Kaggle words that do not stem down to BNC words
     original_not_in_intersection = [w for w in original_words
-                                    if stem(w) not in stemmed_intersection]
+                                    if stem(w, bnc_words)
+                                    not in stemmed_intersection]
     print(fp.format(u'% original Kaggle words not in \u2229: ', 100 *
                     len(original_not_in_intersection) / len(original_words)))
     set_original_not_in_intersection = set(original_not_in_intersection)
@@ -104,14 +109,14 @@ def main():
 
 
 def save_temp(file_name, string_list):
-    temp_file = open(wordlists_path + file_name + '.txt', 'w+')
+    temp_file = open(stm.wordlists_path + file_name + '.txt', 'w+')
     temp_file.write('\n'.join(string_list))
     temp_file.close()
 
 
-def stem(word):
+def stem(word, bnc_words):
     # Wrapper for the separate stemmer program
-    stemmer_output = stemmer.stem_list([word])
+    stemmer_output = stm.stem_list([word], bnc_words)
 
     if len(stemmer_output) == 1:
         return stemmer_output[0]

@@ -76,32 +76,86 @@ stop_words = ['a', 'aboard', 'about', 'above', 'across', 'after', 'against',
               'yes', 'yet', 'you', 'your', 'yours', 'yourself', 'yourselves',
               'zero']
 
+problem_words = {}
 delta_statistics = defaultdict(int)
 bow_statistics = defaultdict(int)
 pre_stemmed_words = set()
 post_stemmed_words = set()
 wordnet_lemmatiser = WordNetLemmatizer()
 save_results = True
+esp_path = '../KaggleData/ESPGame100k/'
+wordlists_path = '../IntermediateWordLists/'
+stemmed_dir = 'labels-stemmed/'
+original_dir = 'labels/'
 
 
-def stem_files(bow_file_directory, pre_stemmed_folder, post_stemmed_folder):
+def load_bnc():
+    bnc_words = []
+
+    # Only one file for all BNC words
+    bnc_file = open(wordlists_path + 'wordsBNC.txt')
+    bnc_line = bnc_file.readline()
+    while(bnc_line != ''):
+        bnc_words.append(clean_text(bnc_line))
+        bnc_line = bnc_file.readline()
+    bnc_file.close()
+
+    return bnc_words
+
+
+def load_kaggle():
+    # This independently loads all Kaggle words into a list for use by other
+    # scripts (the stemmer needs to stem words on a per-file basis and so
+    # doesn't need a whole list)
+    kaggle_words = []
+    temp_file_paths = []
+    for (_, _, filenames) in walk(esp_path + original_dir):
+        temp_file_paths.extend(filenames)
+        break
+
+    for temp_file_path in temp_file_paths:
+        kaggle_words.extend(file_to_bow(esp_path + original_dir +
+                                        temp_file_path))
+
+    return kaggle_words
+
+
+def stem_files(bnc_words):
     all_bow_file_paths = []
-    for (_, _, filenames) in walk(bow_file_directory + pre_stemmed_folder):
+    for (_, _, filenames) in walk(esp_path + original_dir):
         all_bow_file_paths.extend(filenames)
         break
 
     print('Found ' + str(len(all_bow_file_paths)) + ' files to stem at ' +
-          bow_file_directory + pre_stemmed_folder + '.')
+          esp_path + original_dir + '.')
     print('Stemming ' + str(run_size) + ' of them.')
     if save_results:
-        print('Stemmed files will be saved to ' + bow_file_directory +
-              post_stemmed_folder + '.')
+        print('Stemmed files will be saved to ' + esp_path + stemmed_dir + '.')
     else:
         print('Debug run, not saving.')
 
     for bow_file_path in all_bow_file_paths[:run_size]:
-        stem_file(bow_file_directory + pre_stemmed_folder + bow_file_path,
-                  bow_file_directory + post_stemmed_folder + bow_file_path)
+        stem_file(esp_path + original_dir + bow_file_path,
+                  esp_path + stemmed_dir + bow_file_path, bnc_words)
+
+
+def stem_file(input_file_path, output_file_path, bnc_words):
+    # Read in the unstemmed bag of words from file
+    bow = file_to_bow(input_file_path)
+
+    stemmed_bow = stem_list(bow, bnc_words)
+
+    # Save the stemmed bag of words file
+    if save_results:
+        bow_to_file(output_file_path, stemmed_bow)
+
+    # Update statistics
+    delta = len(stemmed_bow) - len(bow)
+    delta_statistics[delta] += 1
+    bow_statistics[len(bow)] += 1
+
+    pre_stemmed_words.update(bow)
+    post_stemmed_words.update(stemmed_bow)
 
 
 def file_to_bow(file_path):
@@ -154,26 +208,7 @@ def clean_urls_and_whitespace(word):
     return word
 
 
-def stem_file(input_file_path, output_file_path):
-    # Read in the unstemmed bag of words from file
-    bow = file_to_bow(input_file_path)
-
-    stemmed_bow = stem_list(bow)
-
-    # Save the stemmed bag of words file
-    if save_results:
-        bow_to_file(output_file_path, stemmed_bow)
-
-    # Update statistics
-    delta = len(stemmed_bow) - len(bow)
-    delta_statistics[delta] += 1
-    bow_statistics[len(bow)] += 1
-
-    pre_stemmed_words.update(bow)
-    post_stemmed_words.update(stemmed_bow)
-
-
-def stem_list(input_list):
+def stem_list(input_list, bnc_words):
     stemmed_bow = input_list
 
     # Lowercase the words and remove trailing whitespace
@@ -211,7 +246,7 @@ def stem_list(input_list):
         #if (word[-1] == 'v') and ((word[:-1] + 'f') in raw_stemmed_bow):
 
     # Next, stem the words
-    stemmed_bow = [stem_word(word) for word in stemmed_bow]
+    stemmed_bow = [stem_word(word, bnc_words) for word in stemmed_bow]
 
     stemmed_bow = sorted(list(set(stemmed_bow)))  # Merge stemming duplicates
 
@@ -222,23 +257,57 @@ def clean_text(source):
     return source.replace('\n', '').replace('\r', '').replace('\0', '')
 
 
-def stem_word(word):
+def assert_non_empty(size):
+
+    if size < 1:
+        sys.stderr.write('Failed to load BNC corpus.')
+        sys.exit(1)
+
+
+def stem_word(word, bnc_words):
     # First run a (slightly modified) Paice-Husk stemmer
 
-    #stem it
-    #if in bnc then done
-    #but if not in bnc then, is unstemmeed in bnc, good
-    #   if unstemmed is also not in bnc, then it's a problem word
-
-     #if it's a problem word that has quite a lot of it, fix maybe
-
+    # Stem the word
     stemmed_word = paicehusk_stem(word)
 
     # If the stemmer failed to stem the word, return the original
     if len(stemmed_word) < 1:
         return word
 
+    # Otherwise we have stemmed it
+    # If the stemmed word is in the BNC then we are good
+    if stemmed_word in bnc_words:
+        return stemmed_word
+
+    # If not, then, is the unstemmed version in the BNC?
+    # If so, return that
+    if word in bnc_words:
+        return word
+
+    # If the unstemmed version is also not in the BNC, then it's a problem word
+    # If the problem word occurs often, we shall keep track of it for analysis
+    if word in problem_words:
+        problem_words[word] += 1
+    else:
+        problem_words[word] = 1
+
     return stemmed_word
+
+
+def main():
+    bnc_words = load_bnc()
+
+    stem_files(bnc_words)
+    delta_stats = dict(delta_statistics).items()
+    print(sorted(delta_stats))
+    bow_stats = dict(bow_statistics).items()
+    print(sorted(bow_stats))
+    print('Pre-stemmed unique words: ' + str(len(pre_stemmed_words)))
+    print('Post-stemmed unique words: ' + str(len(post_stemmed_words)))
+    print('Problem words: ')
+    for pw in sorted(problem_words, key=problem_words.get, reverse=True):
+        print(str(pw) + ': ' + str(problem_words[pw]))
+
 
 if __name__ == '__main__':
     args = sys.argv
@@ -252,11 +321,4 @@ if __name__ == '__main__':
             except ValueError:
                 print(usage_string)
                 sys.exit()
-
-    stem_files('KaggleData/ESPGame100k/', 'labels/', 'labels-stemmed/')
-    delta_stats = dict(delta_statistics).items()
-    print(sorted(delta_stats))
-    bow_stats = dict(bow_statistics).items()
-    print(sorted(bow_stats))
-    print('Pre-stemmed unique words: ' + str(len(pre_stemmed_words)))
-    print('Post-stemmed unique words: ' + str(len(post_stemmed_words)))
+    main()
