@@ -25,7 +25,7 @@ File To Data
 Aims to convert files output by BNC Calculator into easily plottable data.
 
 
-Stemming Utility
+Stemming Benefit
 ----------------
 
 Tries to determine the utility of stemming by producing metrics for percentage

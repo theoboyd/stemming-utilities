@@ -7,26 +7,12 @@ from __future__ import division
 from os import walk
 import sys
 #import profile
-import stemmer as stm # My stemmer functions
+import stemmer as stm  # My stemmer functions
 
 # Printing labels with:
 ts = u'{:35s}{:10,d}'   # Thousands separated numbers
 fp = u'{:35s}{:10.3f}'  # Floating point numbers
 ls = u'{:35s}{:s}'      # Lists
-
-
-def load_bnc():
-    bnc_words = []
-
-    # Only one file for all BNC words
-    bnc_file = open(stm.wordlists_path + 'wordsBNC.txt')
-    bnc_line = bnc_file.readline()
-    while(bnc_line != ''):
-        bnc_words.append(stm.clean_text(bnc_line))
-        bnc_line = bnc_file.readline()
-    bnc_file.close()
-
-    return bnc_words
 
 
 def load_files():

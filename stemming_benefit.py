@@ -7,11 +7,12 @@ from __future__ import division
 from collections import Counter
 import math
 import stemmer as stm  # My stemmer functions
+import bnc_calculator
 
 
 def create_frequency_plots():
     bnc_words = stm.load_bnc()
-    original_kaggle_words = stm.load_kaggle()
+    original_kaggle_words = ['hello']  # stm.load_kaggle()
     stemmed_kaggle_words = stm.stem_list(original_kaggle_words, bnc_words)
 
     # Plot two lines of points
@@ -81,8 +82,9 @@ def points_to_mathematica(xy_tuple_list):
 def main():
     (original_points, stemmed_points) = create_frequency_plots()
 
-    print(points_to_mathematica(original_points))
-    print(points_to_mathematica(stemmed_points))
+    bnc_calculator.save_temp('stemming_benefit_lines',
+                             [points_to_mathematica(original_points),
+                              points_to_mathematica(stemmed_points)])
 
 if __name__ == '__main__':
     main()
