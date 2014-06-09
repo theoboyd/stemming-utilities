@@ -6,10 +6,8 @@
 from __future__ import division
 from collections import defaultdict
 import sys
-import stemmer  # My stemmer functions
+import stemmer as stm  # My stemmer functions
 import bnc_calculator
-
-wordlists_path = '../IntermediateWordLists/'
 
 
 def main(file_name):
@@ -44,10 +42,10 @@ def load_data(file_name):
     # That eg: Mathematica could use
     data = []
 
-    data_file = open(wordlists_path + file_name + '.txt')
+    data_file = open(stm.wordlists_path + file_name + '.txt')
     data_line = data_file.readline()
     while(data_line != ''):
-        data.append(stemmer.clean_text(data_line))
+        data.append(stm.clean_text(data_line))
         data_line = data_file.readline()
     data_file.close()
 

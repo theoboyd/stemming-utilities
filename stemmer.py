@@ -7,6 +7,7 @@ import re
 import sys
 from os import walk
 from collections import defaultdict
+#from collections import OrderedDict
 #from stemming.porter import stem as porter_stem
 #from stemming.porter2 import stem as porter2_stem
 #from stemming.lovins import stem as lovins_stem
@@ -19,6 +20,7 @@ from nltk.stem.wordnet import WordNetLemmatizer
 
 run_size = 100000
 usage_string = 'Usage: stemmer.py [nosave] [size:<integer>]'
+invalid_token = '<NULL>'
 
 # Acceptable words that don't otherwise match our valid word regex
 valid_exceptions = ['mp3', 'mp3 player', 'mp3 players', '911', '9/11']
@@ -103,19 +105,22 @@ def load_bnc():
     return bnc_words
 
 
-def load_kaggle():
+def load_kaggle(pre_stemmed):
     # This independently loads all Kaggle words into a list for use by other
     # scripts (the stemmer needs to stem words on a per-file basis and so
     # doesn't need a whole list)
     kaggle_words = []
     temp_file_paths = []
-    for (_, _, filenames) in walk(esp_path + original_dir):
+    directory = original_dir
+    if pre_stemmed:
+        directory = stemmed_dir
+
+    for (_, _, filenames) in walk(esp_path + directory):
         temp_file_paths.extend(filenames)
         break
 
     for temp_file_path in temp_file_paths:
-        kaggle_words.extend(file_to_bow(esp_path + original_dir +
-                                        temp_file_path))
+        kaggle_words.extend(file_to_bow(esp_path + directory + temp_file_path))
 
     return kaggle_words
 
@@ -134,9 +139,18 @@ def stem_files(bnc_words):
     else:
         print('Debug run, not saving.')
 
+    total = len(all_bow_file_paths)
+    done = 0
+
     for bow_file_path in all_bow_file_paths[:run_size]:
         stem_file(esp_path + original_dir + bow_file_path,
                   esp_path + stemmed_dir + bow_file_path, bnc_words)
+        done += 1
+        if done % 10 == 0:
+            sys.stdout.write('\r' + str(done) + ' of ' + str(total))
+            sys.stdout.flush()
+
+    print('\n')
 
 
 def stem_file(input_file_path, output_file_path, bnc_words):
@@ -175,7 +189,7 @@ def file_to_bow(file_path):
 
 def bow_to_file(file_path, bow):
     # Create handle to output file
-    bow_file = open(file_path, 'w')
+    bow_file = open(file_path, 'w+')
 
     for word in bow:
         bow_file.write('%s\n' % word)
@@ -221,7 +235,8 @@ def stem_list(input_list, bnc_words):
     # Because the regex is so strict, first remove affixed dots and numbers
     valid_regex = re.compile(r'^[a-z][a-z \-\'\.]*$')
     stemmed_bow = [remove_affix_punc_and_nums(word) for word in stemmed_bow]
-    stemmed_bow = [word for word in stemmed_bow if is_valid(word, valid_regex)]
+    stemmed_bow = [word if is_valid(word, valid_regex) else invalid_token
+                   for word in stemmed_bow]
 
     # Remove all dots and clean urls in words
     stemmed_bow = [clean_urls_and_whitespace(word) for word in stemmed_bow]
@@ -236,7 +251,8 @@ def stem_list(input_list, bnc_words):
                    for word in stemmed_bow]
 
     # Remove stop words (such as 'the' and 'and')
-    stemmed_bow = [word for word in stemmed_bow if word not in stop_words]
+    stemmed_bow = [word if word not in stop_words else invalid_token
+                   for word in stemmed_bow]
 
     # Lemmatise the words: this uses WordNet's corpus to clean the data
     #
@@ -248,7 +264,8 @@ def stem_list(input_list, bnc_words):
     # Next, stem the words
     stemmed_bow = [stem_word(word, bnc_words) for word in stemmed_bow]
 
-    stemmed_bow = sorted(list(set(stemmed_bow)))  # Merge stemming duplicates
+    # Merge stemming duplicates whilst preserving order
+    #stemmed_bow = list(OrderedDict.fromkeys(stemmed_bow))
 
     return stemmed_bow
 
