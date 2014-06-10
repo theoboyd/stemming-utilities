@@ -25,14 +25,18 @@ invalid_token = '<NULL>'
 # Acceptable words that don't otherwise match our valid word regex
 valid_exceptions = ['mp3', 'mp3 player', 'mp3 players', '911', '9/11']
 
-conflations = {'desktop': 'desk',
-               'wallpaper': 'wall',
-               'mp3': 'CD player',
-               'mp3 player': 'CD player',
-               'mp3 players': 'CD player',
-               '9/11': '911',
-               'mom': 'mother'}
-misspellings = {'tounge': 'tongue'}
+conflations = {# Modern / American terms not in the BNC
+               #'desktop': 'desk', #  Could be misleading
+               #'wallpaper': 'wall',
+               #'mom': 'mother'
+               #'mp3': 'CD player',
+               #'mp3 player': 'CD player',
+               #'mp3 players': 'CD player',
+               #'9/11': '911'
+               }
+misspellings = {'tounge': 'tongue',
+                'grafitti': 'graffiti',
+                'jewlery': 'jewelry'}
 
 stop_words = ['a', 'aboard', 'about', 'above', 'across', 'after', 'against',
               'ago', 'albeit', 'all', 'along', 'alongside', 'although',
@@ -87,7 +91,7 @@ wordnet_lemmatiser = WordNetLemmatizer()
 save_results = True
 esp_path = '../KaggleData/ESPGame100k/'
 wordlists_path = '../IntermediateWordLists/'
-stemmed_dir = 'labels-stemmed/'
+stemmed_dir = 'labels-stemmed-june-nofaffing/'
 original_dir = 'labels/'
 
 
