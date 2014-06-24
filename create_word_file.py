@@ -15,16 +15,20 @@ count_arg = 0
 
 
 def create_word_file(words_limit):
-    kaggle_words = stm.load_kaggle(True)  # Stemmed
+    kaggle_words = stm.load_kaggle(False)
+    bnc_words = stm.load_bnc()
+
     print('Loaded Kaggle: ' + str(len(kaggle_words)))
 
-    # Remove invalid/junk placeholder (used for statistics)
-    kaggle_words = filter(lambda x: x != stm.invalid_token, kaggle_words)
+    # Remove invalid/junk placeholder (used for statistics) and words not in
+    # the BNC
+    kaggle_words = [word for word in kaggle_words if (word in bnc_words) and
+                    (word != stm.invalid_token)]
 
     # Tally up the whole list of words
     kaggle_tally = Counter(kaggle_words)
 
-    # Get 'k' most common (k is words_limit)
+    # Get 'n' most common (n is words_limit)
     top_tallies = kaggle_tally.most_common(count_arg)
     top_words = [top_tally[0] for top_tally in top_tallies]
 

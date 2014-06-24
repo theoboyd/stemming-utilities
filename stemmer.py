@@ -25,15 +25,15 @@ invalid_token = '<NULL>'
 # Acceptable words that don't otherwise match our valid word regex
 valid_exceptions = ['mp3', 'mp3 player', 'mp3 players', '911', '9/11']
 
-conflations = {# Modern / American terms not in the BNC
-               #'desktop': 'desk', #  Could be misleading
-               #'wallpaper': 'wall',
-               #'mom': 'mother'
-               #'mp3': 'CD player',
-               #'mp3 player': 'CD player',
-               #'mp3 players': 'CD player',
-               #'9/11': '911'
-               }
+conflations = {  # Modern / American terms not in the BNC
+                 #'desktop': 'desk', #  Could be misleading
+                 #'wallpaper': 'wall',
+                 #'mom': 'mother'
+                 #'mp3': 'CD player',
+                 #'mp3 player': 'CD player',
+                 #'mp3 players': 'CD player',
+                 #'9/11': '911'
+              }
 misspellings = {'tounge': 'tongue',
                 'grafitti': 'graffiti',
                 'jewlery': 'jewelry'}
@@ -91,7 +91,7 @@ wordnet_lemmatiser = WordNetLemmatizer()
 save_results = True
 esp_path = '../KaggleData/ESPGame100k/'
 wordlists_path = '../IntermediateWordLists/'
-stemmed_dir = 'labels-stemmed-june-nofaffing/'
+stemmed_dir = 'labels-stemmed/'
 original_dir = 'labels/'
 
 
@@ -312,7 +312,7 @@ def stem_word(word, bnc_words):
     else:
         problem_words[word] = 1
 
-    return stemmed_word
+    return invalid_token
 
 
 def main():
