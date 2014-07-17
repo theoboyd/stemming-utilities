@@ -30,3 +30,14 @@ Stemming Benefit
 
 Tries to determine the utility of stemming by producing metrics for percentage
 of words covered versus number of tokens.
+
+
+Create Word File
+----------------
+
+Generates a list of the most common words, ordered by frequency, for use in COALS calculations.
+
+
+Static Statistics
+-----------------
+Calculates word statistics from previously generated static sources.
