@@ -1,0 +1,26 @@
+from os import listdir
+from os.path import isfile, join
+
+pubfiles = [f for f in listdir("public_test_options") if isfile(join("public_test_options", f))]
+privfiles = [f for f in listdir("private_test_options") if isfile(join("private_test_options", f))]
+
+allwordspub = []
+for pubf in pubfiles:
+  with open(join("public_test_options", pubf)) as pubfo:
+    allwordspriv.append(pubfo.read().splitlines())
+
+allwordspriv = []
+for privf in privfiles:
+  with open(join("private_test_options", privf)) as privfo:
+    allwordspriv.append(privfo.read().splitlines())
+
+# Flatten the lists
+awpub = [item for sublist in allwordspub for item in sublist]
+awpriv = [item for sublist in allwordspriv for item in sublist]
+
+words1k = []
+with open("../IntermediateWordLists/words1k.txt") as words1kfo:
+  words1k = words1kfo.read().splitlines()
+  
+awpubin1k = [word for word in awpub if word in words1k]
+awprivin1k = [word for word in awpriv if word in words1k]
